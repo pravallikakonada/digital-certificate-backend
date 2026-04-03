@@ -1,3 +1,4 @@
+from django.core.mail import send_mail
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Certificate
@@ -42,10 +43,37 @@ def issue_certificate(request):
         status=status,
     )
 
-    return Response(
-        {"message": "Certificate issued successfully ✅"},
-        status=201
-    )
+    try:
+        send_mail(
+            subject="Certificate Issued Successfully",
+            message=f"""Hello {student_name},
+
+Your certificate has been issued successfully.
+
+Student Name: {student_name}
+Course Name: {course_title}
+Certificate ID: {certificate_id}
+Status: {status}
+
+Login here to view your certificate:
+https://digital-certificate-issue.vercel.app/student-login
+
+Regards,
+Admin
+""",
+            from_email="pravallikakonada984@gmail.com",
+            recipient_list=[student_email],
+            fail_silently=False,
+        )
+
+        return Response(
+            {"message": "Certificate issued and mail sent successfully ✅"},
+            status=201
+        )
+
+    except Exception as e:
+        print("CERTIFICATE MAIL ERROR:", str(e))
+        return Response({"error": str(e)}, status=500)
 
 
 @api_view(["GET"])
