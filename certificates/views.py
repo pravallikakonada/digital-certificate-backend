@@ -1,4 +1,3 @@
-from django.core.mail import send_mail
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Certificate
@@ -35,55 +34,18 @@ def issue_certificate(request):
     if Certificate.objects.filter(certificate_id=certificate_id).exists():
         return Response({"error": "Certificate ID already exists"}, status=400)
 
-    try:
-        cert = Certificate.objects.create(
-            student_name=student_name,
-            student_email=student_email,
-            course_title=course_title,
-            certificate_id=certificate_id,
-            status=status,
-        )
-    except Exception as e:
-        print("CERTIFICATE CREATE ERROR:", str(e))
-        return Response({"error": str(e)}, status=500)
+    Certificate.objects.create(
+        student_name=student_name,
+        student_email=student_email,
+        course_title=course_title,
+        certificate_id=certificate_id,
+        status=status,
+    )
 
-    try:
-        send_mail(
-            subject="Your Certificate Has Been Issued",
-            message=f"""Hello {student_name},
-
-Congratulations! Your certificate has been issued successfully.
-
-Student Name: {student_name}
-Course: {course_title}
-Certificate ID: {certificate_id}
-Status: {status}
-
-Login here to view your certificate:
-https://digital-certificate-issue.vercel.app/student-login
-
-Regards,
-Admin
-""",
-            from_email=None,
-            recipient_list=[student_email],
-            fail_silently=False,
-        )
-        return Response(
-            {"message": "Certificate issued and mail sent successfully ✅"},
-            status=201
-        )
-
-    except Exception as e:
-        print("CERTIFICATE MAIL ERROR:", str(e))
-        return Response(
-            {
-                "message": "Certificate created, but mail send failed",
-                "error": str(e),
-                "certificate_id": cert.certificate_id,
-            },
-            status=201
-        )
+    return Response(
+        {"message": "Certificate issued successfully ✅"},
+        status=201
+    )
 
 
 @api_view(["GET"])
