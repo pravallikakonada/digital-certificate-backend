@@ -49,8 +49,8 @@ Admin
             fail_silently=False,
         )
 
-        return Response({"message": "Exam mail sent successfully"}, status=200)
+        return Response({"message": "Exam mail sent successfully ✅"}, status=200)
 
     except Exception as e:
         print("SEND EXAM MAIL ERROR:", str(e))
-        return Response({"error": str(e)}, status=500)
+        return Response({"error": str(e)}, status=500),
