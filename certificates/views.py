@@ -35,13 +35,17 @@ def certificate_list_create(request):
         if Certificate.objects.filter(certificate_id=certificate_id).exists():
             return Response({"error": "Certificate ID already exists"}, status=400)
 
-        Certificate.objects.create(
-            student_name=student_name,
-            student_email=student_email,
-            course_title=course_title,
-            certificate_id=certificate_id,
-            status=status,
-        )
+        try:
+            Certificate.objects.create(
+                student_name=student_name,
+                student_email=student_email,
+                course_title=course_title,
+                certificate_id=certificate_id,
+                status=status,
+            )
+        except Exception as e:
+            print("CERTIFICATE SAVE ERROR:", str(e))
+            return Response({"error": "Certificate save failed"}, status=500)
 
         try:
             send_mail(
@@ -63,16 +67,15 @@ Admin
 """,
                 from_email=settings.EMAIL_HOST_USER,
                 recipient_list=[student_email],
-                fail_silently=False,
+                fail_silently=True,
             )
-            return Response(
-                {"message": "Certificate issued and mail sent successfully ✅"},
-                status=201
-            )
-
         except Exception as e:
             print("CERTIFICATE MAIL ERROR:", str(e))
-            return Response({"error": str(e)}, status=500)
+
+        return Response(
+            {"message": "Certificate issued successfully ✅"},
+            status=201
+        )
 
 
 @api_view(["POST"])
