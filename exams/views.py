@@ -20,7 +20,7 @@ def send_exam_mail(request):
     )
 
     try:
-        invitation = ExamInvitation.objects.create(
+        ExamInvitation.objects.create(
             student_name=student_name,
             student_email=student_email,
             course_title=course_title,
@@ -49,13 +49,7 @@ Admin
             fail_silently=False,
         )
 
-        return Response(
-            {
-                "message": "Exam mail sent successfully",
-                "exam_link": invitation.exam_link
-            },
-            status=status.HTTP_200_OK
-        )
+        return Response({"message": "Exam mail sent successfully"}, status=200)
 
     except Exception as e:
         print("SEND EXAM MAIL ERROR:", str(e))
