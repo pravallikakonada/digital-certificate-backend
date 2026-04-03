@@ -2,100 +2,75 @@ from django.core.mail import send_mail
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Certificate
-import uuid
 
 
-@api_view(["GET"])
-def certificate_list(request):
-    certificates = Certificate.objects.all()
-    data = []
+@api_view(["GET", "POST"])
+def certificate_list_create(request):
+    if request.method == "GET":
+        certificates = Certificate.objects.all()
+        data = []
 
-    for cert in certificates:
-        data.append({
-            "student_name": cert.student_name,
-            "student_email": cert.student_email,
-            "course_title": cert.course_title,
-            "certificate_id": cert.certificate_id,
-            "status": cert.status,
-        })
+        for cert in certificates:
+            data.append({
+                "student_name": cert.student_name,
+                "student_email": cert.student_email,
+                "course_title": cert.course_title,
+                "certificate_id": cert.certificate_id,
+                "status": cert.status,
+            })
 
-    return Response(data)
+        return Response(data)
 
+    if request.method == "POST":
+        student_name = request.data.get("student_name")
+        student_email = request.data.get("student_email")
+        course_title = request.data.get("course_title")
+        certificate_id = request.data.get("certificate_id")
+        status = request.data.get("status", "Issued")
 
-@api_view(["POST"])
-def issue_certificate(request):
-    student_name = request.data.get("student_name")
-    student_email = request.data.get("student_email")
-    course_title = request.data.get("course_title")
-    certificate_id = request.data.get("certificate_id")
-    status = request.data.get("status", "Issued")
+        if not student_name or not student_email or not course_title or not certificate_id:
+            return Response({"error": "All fields are required"}, status=400)
 
-    if not student_name or not student_email or not course_title:
-        return Response({"error": "Missing required fields"}, status=400)
+        if Certificate.objects.filter(certificate_id=certificate_id).exists():
+            return Response({"error": "Certificate ID already exists"}, status=400)
 
-    if not certificate_id:
-        certificate_id = "CERT-" + str(uuid.uuid4())[:8].upper()
+        cert = Certificate.objects.create(
+            student_name=student_name,
+            student_email=student_email,
+            course_title=course_title,
+            certificate_id=certificate_id,
+            status=status,
+        )
 
-    if Certificate.objects.filter(certificate_id=certificate_id).exists():
-        return Response({"error": "Certificate ID already exists"}, status=400)
+        try:
+            send_mail(
+                subject="Your Certificate Has Been Issued",
+                message=f"""Hello {student_name},
 
-    cert = Certificate.objects.create(
-        student_name=student_name,
-        student_email=student_email,
-        course_title=course_title,
-        certificate_id=certificate_id,
-        status=status,
-    )
+Congratulations! Your certificate has been issued successfully.
 
-    login_link = f"http://192.168.29.45:5173/login"
-    verify_link = f"http://192.168.29.45:5173/verify?certificateId={certificate_id}"
-
-    send_mail(
-        subject="Certificate Issued Successfully",
-        message=f"""
-Hi {student_name},
-
-You have successfully completed your test ✅
-
-Your certificate has been issued successfully.
-
+Student Name: {student_name}
 Course: {course_title}
 Certificate ID: {certificate_id}
 Status: {status}
 
-Please login to view your certificate:
-{login_link}
+Login here to view your certificate:
+https://digital-certificate-issue.vercel.app/student-login
 
-Verify your certificate:
-{verify_link}
+You can also verify using this Certificate ID:
+{certificate_id}
 
-Thank you.
+Regards,
+Admin
 """,
-        from_email="pravallikakonada984@gmail.com",
-        recipient_list=[student_email],
-        fail_silently=False,
-    )
+                from_email=None,
+                recipient_list=[student_email],
+                fail_silently=False,
+            )
+        except Exception as e:
+            print("CERTIFICATE MAIL ERROR:", str(e))
 
-    return Response({
-        "message": "Certificate created successfully and email sent",
-        "student_name": cert.student_name,
-        "student_email": cert.student_email,
-        "course_title": cert.course_title,
-        "certificate_id": cert.certificate_id,
-        "status": cert.status,
-    })
-
-
-@api_view(["GET"])
-def verify_certificate(request, certificate_id):
-    try:
-        cert = Certificate.objects.get(certificate_id=certificate_id)
         return Response({
-            "student_name": cert.student_name,
-            "student_email": cert.student_email,
-            "course_title": cert.course_title,
-            "certificate_id": cert.certificate_id,
-            "status": cert.status,
-        })
-    except Certificate.DoesNotExist:
-        return Response({"error": "Invalid Certificate"}, status=404)
+            "message": "Certificate issued successfully",
+            "certificate_id": cert.certificate_id
+        }, status=201)
