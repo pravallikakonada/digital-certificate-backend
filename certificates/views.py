@@ -67,7 +67,7 @@ https://digital-certificate-issue.vercel.app/student-login
 Regards,
 Admin
 """,
-            from_email=settings.EMAIL_HOST_USER,
+            from_email= None,
             recipient_list=[student_email],
             fail_silently=False,
         )
