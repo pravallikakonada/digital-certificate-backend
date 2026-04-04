@@ -48,7 +48,7 @@ def issue_certificate(request):
         print("CERTIFICATE SAVE ERROR:", str(e))
         return Response({"error": f"Save failed: {str(e)}"}, status=500)
 
-    # Mail try chestham, fail ayina parledhu
+    # Mail compulsory ga pampadam
     try:
         send_mail(
             subject="Certificate Issued Successfully",
@@ -69,12 +69,22 @@ Admin
 """,
             from_email=settings.EMAIL_HOST_USER,
             recipient_list=[student_email],
-            fail_silently=True,
+            fail_silently=False,
         )
     except Exception as e:
         print("CERTIFICATE MAIL ERROR:", str(e))
+        return Response(
+            {"error": f"Certificate saved but mail not sent: {str(e)}"},
+            status=500
+        )
 
-    return Response({"message": "Certificate issued successfully ✅"}, status=201)
+    return Response(
+        {
+            "message": "Certificate issued successfully and mail sent ✅",
+            "mail_sent": True
+        },
+        status=201
+    )
 
 
 @api_view(["GET"])
