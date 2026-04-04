@@ -81,7 +81,7 @@ Admin
     return Response(
         {
             "message": "Certificate issued successfully and mail sent ✅",
-            "mail_sent": True
+            "mail_sent": False
         },
         status=201
     )
